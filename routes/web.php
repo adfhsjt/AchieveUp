@@ -46,6 +46,10 @@ Route::get('/ganti_password', [AuthController::class, 'showGantiPassword'])->nam
 Route::post('/forgot_password', [AuthController::class, 'forgotPassword'])->name('forgot_password.post');
 Route::post('/simpan_password', [AuthController::class, 'simpanPassword'])->name('simpan_password.post');
 
+Route::get('/', function () {
+    return redirect('/landing');
+});
+
 Route::get('/landing', [LandingController::class, 'index']);
 
 Route::middleware(['dosen:admin'])->prefix('admin')->name('admin.')->group(function () {
