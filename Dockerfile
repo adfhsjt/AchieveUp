@@ -26,6 +26,9 @@ COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 # Copy project files
 COPY . .
 
+RUN mkdir -p storage/framework/sessions \
+    && chmod -R 775 storage bootstrap/cache
+
 # Install PHP dependencies
 RUN composer install --no-interaction --optimize-autoloader --no-dev
 
