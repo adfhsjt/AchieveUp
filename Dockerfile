@@ -25,6 +25,10 @@ COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 
 RUN mkdir -p /var/www/html/database && touch /var/www/html/database/database.sqlite
 
+RUN docker-php-ext-install pdo_mysql
+
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
 # Copy project files
 COPY . .
 
