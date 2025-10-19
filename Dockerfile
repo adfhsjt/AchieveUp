@@ -15,13 +15,15 @@ RUN apt-get update && apt-get install -y \
     npm
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install mbstring exif pcntl bcmath gd
 
 # Set working directory
 WORKDIR /var/www/html
 
 # Install Composer
 COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
+
+RUN mkdir -p /var/www/html/database && touch /var/www/html/database/database.sqlite
 
 # Copy project files
 COPY . .
