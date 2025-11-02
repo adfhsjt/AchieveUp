@@ -1,47 +1,37 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Bidang;
 use Illuminate\Http\Request;
-use App\Http\Resources\BidangResource;
-use App\Http\Requests\StoreBidangRequest;
-use App\Http\Requests\UpdateBidangRequest;
 
 class BidangController extends Controller
 {
-    // GET /api/admin/bidang
-    public function index(Request $request)
+    public function index()
     {
-        $bidangs = Bidang::latest()->get();
-        return response()->json([
-            'success' => true,
-            'data' => BidangResource::collection($bidangs),
-        ]);
+        $breadcrumb = (object)[
+            'title' => 'Manajemen Bidang',
+            'list' => ['Home', 'Manajemen Bidang']
+        ];
+
+        $page = (object)[
+            'title' => 'Daftar Bidang'
+        ];
+
+        $activeMenu = 'bidang';
+
+        return view('admin.bidang.index', compact('breadcrumb', 'page', 'activeMenu'));
     }
 
-    // GET /api/admin/bidang/{id}
-    public function show($id)
-    {
+    public function getBidang($id){
         $bidang = Bidang::find($id);
-        if (! $bidang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bidang tidak ditemukan.'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => new BidangResource($bidang),
-        ]);
+        return $bidang;
     }
 
-    // GET /api/admin/bidang/getall  (mirip web getall)
     public function getall(Request $request)
     {
         $bidangs = Bidang::all();
+
         $data = $bidangs->map(function ($bidang) {
             return [
                 'id' => $bidang->id,
@@ -50,61 +40,78 @@ class BidangController extends Controller
             ];
         });
 
-        return response()->json([
-            'success' => true,
-            'data' => $data,
+        return response()->json($data);
+    }
+
+    public function create()
+    {
+        $breadcrumb = (object)[
+            'title' => 'Tambah Bidang',
+            'list' => ['Home', 'Bidang', 'Tambah Bidang']
+        ];
+
+        $page = (object)[
+            'title' => 'Tambah Bidang'
+        ];
+
+        $activeMenu = 'bidang';
+
+        return view('admin.bidang.create', compact('breadcrumb', 'page', 'activeMenu'));
+    }
+    
+    public function store(Request $request)
+    {
+        $request->validate([
+            'kode' => 'required|string|max:10|unique:bidang,kode',
+            'nama' => 'required|string|max:255|unique:bidang,nama',
+        ], [
+            'kode.unique' => 'Kode sudah digunakan.',
+            'nama.unique' => 'Nama sudah digunakan.',
         ]);
-    }
-
-    // POST /api/admin/bidang
-    public function store(StoreBidangRequest $request)
-    {
-        $validated = $request->validated();
 
         try {
-            $bidang = Bidang::create($validated);
-            return response()->json([
-                'success' => true,
-                'message' => 'Bidang berhasil ditambahkan.',
-                'data' => new BidangResource($bidang),
-            ], 201);
+            Bidang::create($request->all());
+            return redirect()->route('admin.bidang.index')->with('success', 'Bidang berhasil ditambahkan.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menambahkan Bidang: ' . $e->getMessage(),
-            ], 500);
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan Bidang: ' . $e->getMessage());
         }
     }
-
-    // PUT /api/admin/bidang/{id}
-    public function update(UpdateBidangRequest $request, $id)
+    public function edit($id)
     {
-        $bidang = Bidang::find($id);
-        if (! $bidang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bidang tidak ditemukan.'
-            ], 404);
-        }
+        $bidang = Bidang::findOrFail($id);
 
-        $validated = $request->validated();
+        $breadcrumb = (object)[
+            'title' => 'Edit Bidang',
+            'list' => ['Home', 'Bidang', 'Edit Bidang']
+        ];
+
+        $page = (object)[
+            'title' => 'Edit Bidang'
+        ];
+
+        $activeMenu = 'bidang';
+
+        return view('admin.bidang.edit', compact('breadcrumb', 'page', 'activeMenu', 'bidang'));
+    }
+    public function update(Request $request, $id)
+    {
+        $bidang = Bidang::findOrFail($id);
+
+        $request->validate([
+            'kode' => 'required|string|max:10|unique:bidang,kode,' . $bidang->id,
+            'nama' => 'required|string|max:255|unique:bidang,nama,' . $bidang->id,
+        ], [
+            'kode.unique' => 'Kode sudah digunakan.',
+            'nama.unique' => 'Nama sudah digunakan.',
+        ]);
 
         try {
-            $bidang->update($validated);
-            return response()->json([
-                'success' => true,
-                'message' => 'Bidang berhasil diperbarui.',
-                'data' => new BidangResource($bidang),
-            ]);
+            $bidang->update($request->all());
+            return redirect()->route('admin.bidang.index')->with('success', 'Bidang berhasil diperbarui.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui Bidang: ' . $e->getMessage(),
-            ], 500);
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui Bidang: ' . $e->getMessage());
         }
     }
-
-    // DELETE /api/admin/bidang/{id}
     public function destroy($id)
     {
         try {
@@ -113,7 +120,7 @@ class BidangController extends Controller
             if ($bidang->lomba()->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bidang tidak dapat dihapus karena memiliki data lomba.'
+                    'message' => 'Bidang tidak dapat dihapus karena memiliki data mahasiswa.'
                 ], 400);
             }
 
@@ -123,16 +130,33 @@ class BidangController extends Controller
                 'success' => true,
                 'message' => 'Bidang berhasil dihapus.'
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bidang tidak ditemukan.'
-            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus Bidang: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function show($id)
+    {
+        $bidang = $this->getBidang($id);
+        $breadcrumb = (object) [
+            'title' => 'Detail Bidang',
+            'list' => ['Home', 'Bidang', 'Detail']
+        ];
+
+        $page = (object) [
+            'title' => 'Detail data Bidang'
+        ];
+
+        $activeMenu = 'bidang';
+
+        return view('admin.bidang.detail', compact(
+            'breadcrumb',
+            'page',
+            'activeMenu',
+            'bidang'
+        ));
     }
 }
